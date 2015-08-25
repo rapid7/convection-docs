@@ -1,0 +1,11 @@
+{
+  "name": "convection-presentations",
+  "version": "0.0.1",
+  "description": "Presentation material for Convection",
+  "main": "bin/server",
+  "dependencies": {
+    "express": "4.x"
+  },
+  "author": "John Manero <jmanero@rapid7.com>",
+  "license": "MIT"
+}

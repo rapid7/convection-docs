@@ -1,0 +1,197 @@
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1024" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Convection 101</title>
+
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.5/darkly/bootstrap.min.css" rel="stylesheet" /> -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.5/united/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" />
+  <link href="/resource/impress.css" rel="stylesheet" />
+
+  <link rel="shortcut icon" href="/favicon.png" />
+</head>
+
+<body>
+  <div id="impress">
+
+    <div id="title" class="step panel panel-primary" data-x="0" data-y="0">
+      <div class="panel-body title">
+        <h1>Convection</h1>
+        <h2>101: CloudFormation, Templates, and Stacks</h2>
+      </div>
+    </div>
+
+    <div id="contents" class="step panel panel-primary" data-x="1048" data-y="0">
+      <div class="panel-heading">Convection 101: CloudFormation, Templates, and Stacks</div>
+      <div class="panel-body slide">
+        <h1><i class="fa fa-bars"></i>&nbsp;Contents</h1>
+        <div class="row">
+          <div class="col-md-5">
+            <a href="#/cf-basics">
+              <h2><i class="fa fa-cloud"></i>&nbsp;CloudForamtion</h2>
+            </a>
+            <div class="list-group">
+              <a class="list-group-item" href="#/cf-model">Model</a>
+              <a class="list-group-item" href="#/cf-template">Templates</a>
+              <a class="list-group-item" href="#/cf-permissions">Permissions</a>
+            </div>
+          </div>
+          <div class="col-md-5">
+            <a href="#/c-basics">
+              <h2><i class="fa fa-refresh"></i>&nbsp;Convection</h2>
+            </a>
+            <div class="list-group">
+              <a class="list-group-item" href="#/c-templates">Templates</a>
+              <a class="list-group-item" href="#/c-clouds">Clouds</a>
+              <a class="list-group-item" href="#/c-usage">Usage</a>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-5">
+            <a href="#/w-basics">
+              <h2><i class="fa fa-tasks"></i>&nbsp;Workflow</h2>
+            </a>
+            <div class="list-group">
+              <a class="list-group-item" href="#/w-testing">Testing</a>
+              <a class="list-group-item" href="#/w-converging">Converging</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cf-basics" class="step panel panel-primary" data-x="2096" data-y="0">
+      <div class="panel-heading">Convection 101: CloudFormation, Templates, and Stacks</div>
+      <div class="panel-body slide">
+        <h1><i class="fa fa-cloud"></i>&nbsp;CloudFormation</h1>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;An AWS service for managing AWS resources with</p>
+        <div class="indent">
+          <p><i class="fa fa-arrow-right"></i>&nbsp;A desired state definition language</p>
+          <p><i class="fa fa-arrow-right"></i>&nbsp;An API to accept definition documents</p>
+        </div>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;Provides matadata about managed resources</p>
+        <p class="text-danger"><i class="fa fa-arrow-right"></i>&nbsp;Does not inspect physical state of managed resources</p>
+        <p class="text-danger"><i class="fa fa-arrow-right"></i>&nbsp;Can not manage resources that were created outside of CloudFormation</p>
+      </div>
+    </div>
+
+    <div id="cf-model" class="step panel panel-primary" data-x="2096" data-y="792">
+      <div class="panel-heading">Convection 101: CloudFormation, Templates, and Stacks</div>
+      <div class="panel-body slide">
+        <h1><i class="fa fa-cloud"></i>&nbsp;CloudFormation: Model</h1>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;<b>Templates</b> define of a set of AWS resources that CloudFormation will create</p>
+        <div class="indent">
+          <pre>"Resources": {
+  "Logical ID": {
+    "Type": "Resource type",
+    "Properties": {
+      Set of properties
+    }
+  }
+}</pre>
+          <p><i class="fa fa-arrow-right"></i>&nbsp;Resources are defined as prototypes called <code>Logical Resources</code></p>
+          <p><i class="fa fa-arrow-right"></i>&nbsp;Logical Resources must have a unique key, called a <code>Logical ID</code>, a
+            <code>Type</code> and <code>Properties</code></p>
+        </div>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;<b>Stacks</b> use templates to manage AWS resources</p>
+        <div class="indent">
+          <p><i class="fa fa-arrow-right"></i>&nbsp;CloudFormation refers to the AWS resources that it creates and manages
+            as <code>Physical Resources</code></p>
+          <p><i class="fa fa-arrow-right"></i>&nbsp;The identities assigned to Physical Resources by their respective services
+            are called <code>Physical IDs</code>
+          <p><i class="fa fa-arrow-right"></i>&nbsp;Stacks map the set of resource prototypes defined in a template to the
+            <code>Phyiscal IDs</code></p>
+        </div>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;Read Amazon's
+          <a target="_blank" href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html">Published Documentation!</a>
+        </p>
+      </div>
+    </div>
+
+    <div id="cf-template" class="step panel panel-primary" data-x="2096" data-y="1584">
+      <div class="panel-heading">Convection 101: CloudFormation, Templates, and Stacks</div>
+      <div class="panel-body slide">
+        <h1><i class="fa fa-cloud"></i>&nbsp;CloudFormation: Template</h1>
+        <p>Templates have several sub-sections. We're going to look at the <code>Resources</code> section in detail</p>
+        <div class="indent">
+          <pre>"Resources": {
+  "Logical ID": {
+    "Type": "Resource type",
+    "Properties": {
+      Set of properties
+    }
+  }
+}</pre>
+          <p><i class="fa fa-arrow-right"></i>&nbsp;For a complete description of CloudFormation Templates, see
+            <a target="_blank" href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html">The Docs</a>
+          </p>
+        </div>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;A resource's
+          <code>Logical ID</code> must be alphanumeric (A-Za-z0-9) and unique within the template
+          <p>
+
+            <p><i class="fa fa-arrow-right"></i>&nbsp;A resource's
+              <code>Type</code> defines the physical AWS resource that it defines.</p>
+            <div class="indent">
+              <p><i class="fa fa-arrow-right"></i>&nbsp;Type strings follow a simple pattern:
+                <code>AWS::&lt;Service&gt;::&lt;ResourceType&gt;</code>
+              </p>
+              <p><i class="fa fa-arrow-right"></i>&nbsp;CloudFormation supports a set of types. See
+                <a href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html">The Docs</a>
+              </p>
+            </div>
+            <p><i class="fa fa-arrow-right"></i>&nbsp;A resource's
+              <code>Properties</code> are set of key/value pairs specific to the resource type</p>
+      </div>
+    </div>
+
+    <div id="cf-permissions" class="step panel panel-primary" data-x="2096" data-y="2376">
+      <div class="panel-heading">Convection 101: CloudFormation, Templates, and Stacks</div>
+      <div class="panel-body slide">
+        <h1><i class="fa fa-cloud"></i>&nbsp;CloudFormation: Permissions</h1>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;CloudFormation performs actions on your behalf, using IAM's <code>assume-role</code>
+          functionality.</p>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;When you create a stack, the CloudFormation service is only able to perform actions that
+          your IAM user is authorized to perform.</p>
+
+        <p><i class="fa fa-arrow-right"></i>&nbsp;Check out the
+          <a href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#d0e69121">Troubleshooting Guide</a>
+          for some suggestions to fix this.
+        </p>
+      </div>
+    </div>
+
+    <div id="overview" class="step" data-x="1024" data-y="1584" data-scale="5">
+    </div>
+  </div>
+
+  <nav class="navbar navbar-default navbar-fixed-bottom">
+    <div class="container-fluid">
+      <ul class="nav navbar-nav">
+        <li><a href="#/overview">Overview</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <script src="/resource/impress.js"></script>
+  <script>
+    impress().init();
+  </script>
+</body>
+
+</html>

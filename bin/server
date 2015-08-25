@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+
+var Express = require('express');
+var HTTP = require('http');
+
+var Favicon = require('../lib/favicon');
+var Static = require('../lib/static');
+
+var app = Express();
+var server = HTTP.createServer(app);
+
+app.get('/favicon.png', Favicon());
+app.use('/content', Static(__dirname, '../content'));
+app.use('/resource', Static(__dirname, '../resource'));
+
+server.listen(3000);
