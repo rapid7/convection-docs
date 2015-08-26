@@ -13,4 +13,7 @@ app.get('/favicon.png', Favicon());
 app.use('/content', Static(__dirname, '../content'));
 app.use('/resource', Static(__dirname, '../resource'));
 
-server.listen(3000);
+server.listen(3000, function() {
+  console.log('Listening on ' + server.address().address +
+    ':TCP/' + server.address().port);
+});
