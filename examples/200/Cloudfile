@@ -1,0 +1,13 @@
+require_relative './templates/vpc'
+require_relative './templates/security_groups'
+require_relative './templates/jump_hosts'
+
+name 'convection-demo'
+region 'us-west-1'
+
+attribute 'vpc', 'subnet', '192.168.0.0/20'
+attribute 'jumphost', 'InstanceType', 't2.micro'
+
+stack 'vpc', Templates::VPC
+stack 'security-groups', Templates::SECURITY_GROUPS
+stack 'jump-hosts', Templates::JUMP_HOSTS
