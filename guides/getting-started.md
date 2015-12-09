@@ -377,7 +377,7 @@ end
 stack 'vpc', vpc
 ```
 
-This adds a new property named "public_ips" to the `Mdoel::Template::Resource::EC2Subnet`
+This adds a new property named "public_ips" to the `Model::Template::Resource::EC2Subnet`
 class in Convection. That property sets the "MapPublicIpOnLaunch" property in
 CloudFormation. We'll give it a default value of `false` so we don't break our
 private subnet when we create this new public subnet.
