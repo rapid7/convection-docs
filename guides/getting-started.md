@@ -346,7 +346,7 @@ Update your Cloudfile to look like the one below.
 require 'convection'
 
 class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch', :default => false
+  property :public_ips, 'MapPublicIpOnLaunch'
 end
 
 region 'us-east-1'
@@ -379,8 +379,7 @@ stack 'vpc', vpc
 
 This adds a new property named "public_ips" to the `Model::Template::Resource::EC2Subnet`
 class in Convection. That property sets the "MapPublicIpOnLaunch" property in
-CloudFormation. We'll give it a default value of `false` so we don't break our
-private subnet when we create this new public subnet.
+CloudFormation.
 
 As before, we'll diff our template before converging it to make sure it's doing
 what we expect.
@@ -389,7 +388,6 @@ what we expect.
 $> convection diff
 
 compare  Compare local state of stack vpc (convection-demo-vpc) with remote template
- delete  .Resources.PrivateSubnet.Properties.MapPublicIpOnLaunch
  create  .Resources.PublicSubnet.Type: AWS::EC2::Subnet
  create  .Resources.PublicSubnet.Properties.VpcId.Ref: DemoVPC
  create  .Resources.PublicSubnet.Properties.CidrBlock: 10.10.11.0/24
@@ -398,10 +396,9 @@ compare  Compare local state of stack vpc (convection-demo-vpc) with remote temp
  create  .Resources.PublicSubnet.Properties.Tags.0.Value: convection-demo-vpc-public
 ```
 
-Convection says it will delete the "MapPublicIpOnLaunch" from our private
-subnet. That's fine, because the subnet is private. The public subnet will be
-created with that property set to `true`. The other properties look correct for
-our public subnet, so we can converge it.
+Convection says it will create our public subnet with the "MapPublicIpOnLaunch"
+property set to `true`. It also doesn't show any changes to our private subnet.
+That's what we expect, so we can converge our template.
 
 ```text
 $> convection converge
