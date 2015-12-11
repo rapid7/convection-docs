@@ -631,9 +631,12 @@ update_complete  convection-demo-vpc: (AWS::CloudFormation::Stack)
 ## Create the NAT router ##
 
 Now that we've got our security group, we need to set up an EC2 instance that
-will function as a NAT router. We'll be using one of Amazon's pre-built NAT
-images since we don't need anything custom. The
-[AWS::EC2::Instance][cf-ec2] resource handles creating our
+will function as a NAT router. We'll be using one of [Amazon's pre-built NAT
+images][nat-instance] since we don't need anything custom. Open up the Amazon
+web console and search for AMIs with the string "amzn-ami-vpc-nat-pv" in their
+name. The most recent one, from March 2015, has ID ami-c02b04a8.
+
+The [AWS::EC2::Instance][cf-ec2] resource handles creating our
 router instance from the given AMI. Since our router provides internet access,
 it needs to be in the public subnet. We also need to disable source/destination
 checking so it can perform network address translation. Finally, we'll make
@@ -1133,3 +1136,4 @@ Converge the change if it looks good.
 [cf-gateway-attachment]: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc-gateway-attachment.html
 [cf-route]: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-route.html
 [cf-association]: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet-route-table-assoc.html
+[nat-instance]: http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_NAT_Instance.html
