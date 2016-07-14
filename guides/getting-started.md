@@ -12,10 +12,22 @@ account
 * A NAT router so EC2 instances in the private subnet can reach the internet
 * A security group for the NAT router so you can control access to it
 
-To get started, open a new file named "Cloudfile" and put the following Ruby
+To get started, create the following directory structure for your project.
 code in it.
-
+```
+my-convection-project/
+├── clouds
+│   └── us-east-1
+└── templates
+```
+In the top level of your convection project create a file "Gemfile" with the following inside.
 ```ruby
+gem 'convection'
+```
+
+In the us-east-1 folder open a new file named "Cloudfile" and put the following Ruby
+```ruby
+require_relative './templates/vpc.rb'
 require 'convection'
 
 region 'us-east-1'
@@ -40,24 +52,30 @@ require 'convection'
 region 'us-east-1'
 name 'convection-demo'
 
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-end
+stack 'vpc', Templates::VPC
+```
+In the templates directory create a vpc.rb file and include the following in it.
+```
 
-stack 'vpc', vpc
+require 'convection'
+
+module Templates
+  VPC = Convection.template do
+    description 'VPC with Public and Private Subnets (NAT)'
+
+  end
+end
 ```
 
 The `template` method creates a Convection template. The `description` property
 in the template maps to the "Description" property in a [CloudFormation template][cf-template].
-Assigning the result of the `template` method to the `vpc` variable allows us to
+Assigning the result of the `template` method to the `VPC` variable allows us to
 pass the template to the `stack` method. The `stack` method defines a
 CloudFormation stack in AWS.
 
 This separation between the description of AWS resources (the template) and
 the instantiation of those resources (the stack) makes Convection templates
-flexible. Large Convection projects often keep templates in their own files.
-They use multiple Cloudfiles to handle differences between regions or
-environments. For this example, we'll keep everything in one Cloudfile.
+flexible.
 
 Now that we've got a Convection template, we can run Convection's diff command
 to compare what's in our template with what's in Amazon. This is a new template,
@@ -92,23 +110,20 @@ tells us that our template's not valid. We're missing a resource.
 Since we're building a VPC with two subnets, let's add the VPC itself as a
 resource. Our VPC will be of size /23 and use the CIDR block 10.10.10.0/23.
 
-Update your Cloudfile to look like the one below.
+Update your vpc.rb template to look like the one below.
 
 ```ruby
 require 'convection'
 
-region 'us-east-1'
-name 'convection-demo'
+module Templates
+  VPC = Convection.template do
+    description 'VPC with Public and Private Subnets (NAT)'
 
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
+    ec2_vpc 'DemoVPC' do
+      network '10.10.10.0/23'
+    end
   end
 end
-
-stack 'vpc', vpc
 ```
 
 The `ec2_vpc` method defines an [AWS::EC2::VPC][cf-vpc] resource in
@@ -157,24 +172,21 @@ We can name the VPC resource by tagging it. Setting the `tag` attribute on
 the "DemoVPC" resource in Convection will add a tag to the resource. We'll use
 a combination of the cloud name and the stack name as the tag for the VPC.
 
-Update your Cloudfile to look like the one below.
+Update your vpc.rb template to look like the one below.
 
 ```ruby
 require 'convection'
 
-region 'us-east-1'
-name 'convection-demo'
+module Templates
+  VPC = Convection.template do
+    description 'VPC with Public and Private Subnets (NAT)'
 
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
+    ec2_vpc 'DemoVPC' do
+      network '10.10.10.0/23'
+      tag 'Name', "#{stack.cloud}-#{stack.name}"
+    end
   end
 end
-
-stack 'vpc', vpc
 ```
 
 We're using a naming convection for resources that includes the cloud name and
@@ -188,6 +200,38 @@ $> convection diff
 compare  Compare local state of stack vpc (convection-demo-vpc) with remote template
  create  .Resources.DemoVPC.Properties.Tags.0.Key: Name
  create  .Resources.DemoVPC.Properties.Tags.0.Value: convection-demo-vpc
+```
+If you want to see what the cloud formation template for your vpc template would look like you can run the below.
+This can help you verify that values referenced that exist under the "stack" namespace are set correctly.
+
+```text
+$> convection print vpc
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "VPC with Public and Private Subnets (NAT)",
+  "Parameters": {
+  },
+  "Mappings": {
+  },
+  "Conditions": {
+  },
+  "Resources": {
+    "DemoVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.10.10.0/23",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "convection-demo-vpc"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+  }
+}
 ```
 
 Convection's going to add the "Name" tag to the "DemoVPC" resource. That's what
@@ -217,29 +261,27 @@ Just like there's an `ec2_vpc` method in Convection for creating a VPC, there's
 also an `ec2_subnet` method for creating a subnet. And like our VPC, our subnet
 will have `network` and `tag` attributes.
 
-Update your Cloudfile to look like the one below.
+Update your vpc.rb template to look like the one below.
 
 ```ruby
 require 'convection'
 
-region 'us-east-1'
-name 'convection-demo'
+module Templates
+  VPC = Convection.template do
+    description 'VPC with Public and Private Subnets (NAT)'
 
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
+    ec2_vpc 'DemoVPC' do
+      network '10.10.10.0/23'
+      tag 'Name', "#{stack.cloud}-#{stack.name}"
+    end
 
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-  end
+    ec2_subnet 'PrivateSubnet' do
+      network '10.10.10.0/24'
+      tag 'Name', "#{stack.cloud}-#{stack.name}-private"
+    end
 
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
   end
 end
-
-stack 'vpc', vpc
 ```
 
 We can run the diff command to see what Convection's going to create.
@@ -259,30 +301,28 @@ the documentation for the [AWS::EC2::Subnet][cf-subnet] resource, we
 can see it has a required "VpcId" attribute. We can use the Convection's
 `fn_ref` method to get the ID of our VPC and pass it in to the subnet.
 
-Update your Cloudfile to look like the one below.
+Update your vpc.rb template to look like the one below.
 
 ```ruby
 require 'convection'
 
-region 'us-east-1'
-name 'convection-demo'
+module Templates
+  VPC = Convection.template do
+    description 'VPC with Public and Private Subnets (NAT)'
 
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
+    ec2_vpc 'DemoVPC' do
+      network '10.10.10.0/23'
+      tag 'Name', "#{stack.cloud}-#{stack.name}"
+    end
 
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-  end
+    ec2_subnet 'PrivateSubnet' do
+      network '10.10.10.0/24'
+      tag 'Name', "#{stack.cloud}-#{stack.name}-private"
+      vpc fn_ref('DemoVPC')
+    end
 
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
   end
 end
-
-stack 'vpc', vpc
 ```
 
 Now we can diff the Cloudfile and see that the "VpcId" property's getting set
@@ -317,8 +357,7 @@ update_complete  convection-demo-vpc: (AWS::CloudFormation::Stack)
 
 Creating a public subnet is exactly the same as creating a private subnet.
 Use the `ec2_subnet` method to create an [AWS::EC2::Subnet][cf-subnet]
-resource and give it a CIDR block of 10.10.11.0/24. Here's the Convection code
-to do that.
+resource and give it a CIDR block of 10.10.11.0/24. Insert the following convection code into your vpc.rb template to accomplish this.
 
 ```ruby
 ec2_subnet 'PublicSubnet' do
@@ -333,56 +372,13 @@ resource, the major difference between a public and private subnet is
 that Amazon assigns IP addresses to public subnets. Making a subnet public is
 a matter of setting the "MapPublicIpOnLaunch" property to `true`.
 
-We can look through the Convection code for the [ec2_subnet][ec2-subnet]
-method to figure out what the "MapPublicIpOnLaunch" property is named in
-Convection. It looks like the property's not there. Fortunately, we can extend
-Convection at runtime to include the property. This is a useful trick, since it
-lets us take advantage of new functionality in Amazon resources that might not
-yet be available through Convection.
-
-Update your Cloudfile to look like the one below.
+Add the below line to your public subnet block
 
 ```ruby
-require 'convection'
-
-class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch'
-end
-
-region 'us-east-1'
-name 'convection-demo'
-
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-  end
-
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
-  end
-
-  ec2_subnet 'PublicSubnet' do
-    network '10.10.11.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-public"
-    vpc fn_ref('DemoVPC')
-    public_ips true
-  end
-end
-
-stack 'vpc', vpc
+public_ips true
 ```
 
-This adds a new property named "public_ips" to the `Model::Template::Resource::EC2Subnet`
-class in Convection. That property sets the "MapPublicIpOnLaunch" property in
-CloudFormation.
-
-As before, we'll diff our template before converging it to make sure it's doing
-what we expect.
+Your diff should contain your changes for the public subnet.
 
 ```text
 $> convection diff
@@ -429,47 +425,14 @@ and a reference to our VPC. We can add the `ec2_security_group` method to our
 Cloudfile with a `description` and `vpc` attribute to create a default security
 group for our NAT router.
 
-Update your Cloudfile to look like the one below.
+Add the below block to your vpc.rb template
 
 ```ruby
-require 'convection'
-
-class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch', :default => false
+ec2_security_group 'NATSecurityGroup' do
+  description 'NAT access for private subnet'
+  vpc fn_ref('DemoVPC')
+  tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
 end
-
-region 'us-east-1'
-name 'convection-demo'
-
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-  end
-
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
-  end
-
-  ec2_subnet 'PublicSubnet' do
-    network '10.10.11.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-public"
-    vpc fn_ref('DemoVPC')
-    public_ips true
-  end
-
-  ec2_security_group 'NATSecurityGroup' do
-    description 'NAT access for private subnet'
-    vpc fn_ref('DemoVPC')
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
-  end
-end
-
-stack 'vpc', vpc
 ```
 
 We'll follow the same pattern we've used before. Diff the Convection template to
@@ -534,59 +497,47 @@ as well and lock down outbound requests. Convection has an `egress_rule` method
 for setting output traffic rules. It has the same syntax as the `ingress_rule`
 method.
 
-Update your Cloudfile to look like the one below.
+Your vpc.rb template should now look like the one below.
 
 ```ruby
 require 'convection'
 
-class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch', :default => false
-end
+module Templates
+  VPC = Convection.template do
+    description 'VPC with Public and Private Subnets (NAT)'
 
-name 'convection-demo'
-region 'us-east-1'
-
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-  end
-
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
-  end
-
-  ec2_subnet 'PublicSubnet' do
-    network '10.10.11.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-public"
-    vpc fn_ref('DemoVPC')
-    public_ips true
-  end
-
-  ec2_security_group 'NATSecurityGroup' do
-    description 'NAT access for private subnet'
-    vpc fn_ref('DemoVPC')
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
-    ingress_rule :tcp, 443 do
-      source '10.10.10.0/24'
+    ec2_vpc 'DemoVPC' do
+      network '10.10.10.0/23'
+      tag 'Name', "#{stack.cloud}-#{stack.name}"
     end
-    ingress_rule :tcp, 80 do
-      source '10.10.10.0/24'
+
+    ec2_subnet 'PrivateSubnet' do
+      network '10.10.10.0/24'
+      tag 'Name', "#{stack.cloud}-#{stack.name}-private"
+      vpc fn_ref('DemoVPC')
     end
-    egress_rule :tcp, 443 do
-      source '0.0.0.0/0'
+
+    ec2_subnet 'PublicSubnet' do
+      network '10.10.11.0/24'
+      tag 'Name', "#{stack.cloud}-#{stack.name}-public"
+      vpc fn_ref('DemoVPC')
+      public_ips true
     end
-    egress_rule :tcp, 80 do
-      source '0.0.0.0/0'
+
+    ec2_security_group 'NATSecurityGroup' do
+      description 'NAT access for private subnet'
+      vpc fn_ref('DemoVPC')
+      tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
+      ingress_rule :tcp, 443 do
+        source '10.10.10.0/24'
+      end
+      ingress_rule :tcp, 80 do
+        source '10.10.10.0/24'
+      end
     end
+
   end
 end
-
-stack 'vpc', vpc
 ```
 
 Our security group's locked down, so we can diff our template and see what
@@ -642,67 +593,61 @@ it needs to be in the public subnet. We also need to disable source/destination
 checking so it can perform network address translation. Finally, we'll make
 sure the instance is in the security group we just created.
 
-Update your Cloudfile to look like the one below.
+Update your vpc.rb template to look like the one below.
 
 ```ruby
 require 'convection'
 
-class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch', :default => false
-end
+module Templates
+  VPC = Convection.template do
+    description 'VPC with Public and Private Subnets (NAT)'
 
-name 'convection-demo'
-region 'us-east-1'
-
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-  end
-
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
-  end
-
-  ec2_subnet 'PublicSubnet' do
-    network '10.10.11.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-public"
-    vpc fn_ref('DemoVPC')
-    public_ips true
-  end
-
-  ec2_security_group 'NATSecurityGroup' do
-    description 'NAT access for private subnet'
-    vpc fn_ref('DemoVPC')
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
-    ingress_rule :tcp, 443 do
-      source '10.10.10.0/24'
+    ec2_vpc 'DemoVPC' do
+      network '10.10.10.0/23'
+      tag 'Name', "#{stack.cloud}-#{stack.name}"
     end
-    ingress_rule :tcp, 80 do
-      source '10.10.10.0/24'
-    end
-    egress_rule :tcp, 443 do
-      source '0.0.0.0/0'
-    end
-    egress_rule :tcp, 80 do
-      source '0.0.0.0/0'
-    end
-  end
 
-  ec2_instance 'NATInstance' do
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat"
-    image_id 'ami-c02b04a8'
-    subnet fn_ref('PublicSubnet')
-    security_group fn_ref('NATSecurityGroup')
-    src_dst_checks false
+    ec2_subnet 'PrivateSubnet' do
+      network '10.10.10.0/24'
+      tag 'Name', "#{stack.cloud}-#{stack.name}-private"
+      vpc fn_ref('DemoVPC')
+    end
+
+    ec2_subnet 'PublicSubnet' do
+      network '10.10.11.0/24'
+      tag 'Name', "#{stack.cloud}-#{stack.name}-public"
+      vpc fn_ref('DemoVPC')
+      public_ips true
+    end
+
+    ec2_security_group 'NATSecurityGroup' do
+      description 'NAT access for private subnet'
+      vpc fn_ref('DemoVPC')
+      tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
+      ingress_rule :tcp, 443 do
+        source '10.10.10.0/24'
+      end
+      ingress_rule :tcp, 80 do
+        source '10.10.10.0/24'
+      end
+      egress_rule :tcp, 443 do
+        source '0.0.0.0/0'
+      end
+      egress_rule :tcp, 80 do
+        source '0.0.0.0/0'
+      end
+    end
+
+    ec2_instance 'NATInstance' do
+      tag 'Name', "#{stack.cloud}-#{stack.name}-nat"
+      image_id 'ami-c02b04a8'
+      subnet fn_ref('PublicSubnet')
+      security_group fn_ref('NATSecurityGroup')
+      src_dst_checks false
+    end
+
   end
 end
-
-stack 'vpc', vpc
 ```
 
 We can diff our template to see what's going to change.
@@ -747,69 +692,14 @@ We could use Convection to create each of those resources. However, there's a
 simpler way. Convection provides an `add_route_table` method that can generate
 an internet gateway and wire it up to our VPC.
 
-Update your Cloudfile to look like the one below.
-
+Update your `ec2_vpc` block to look like the one below. NOTE we added `enable_dns` and `add_route_table`.
 ```ruby
-require 'convection'
-
-class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch', :default => false
-end
-
-name 'convection-demo'
-region 'us-east-1'
-
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
   ec2_vpc 'DemoVPC' do
     network '10.10.10.0/23'
     tag 'Name', "#{stack.cloud}-#{stack.name}"
     enable_dns true
     add_route_table 'InternetGateway', gateway_route: true
   end
-
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
-  end
-
-  ec2_subnet 'PublicSubnet' do
-    network '10.10.11.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-public"
-    vpc fn_ref('DemoVPC')
-    public_ips true
-  end
-
-  ec2_security_group 'NATSecurityGroup' do
-    description 'NAT access for private subnet'
-    vpc fn_ref('DemoVPC')
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
-    ingress_rule :tcp, 443 do
-      source '10.10.10.0/24'
-    end
-    ingress_rule :tcp, 80 do
-      source '10.10.10.0/24'
-    end
-    egress_rule :tcp, 443 do
-      source '0.0.0.0/0'
-    end
-    egress_rule :tcp, 80 do
-      source '0.0.0.0/0'
-    end
-  end
-
-  ec2_instance 'NATInstance' do
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat"
-    image_id 'ami-c02b04a8'
-    subnet fn_ref('PublicSubnet')
-    security_group fn_ref('NATSecurityGroup')
-    src_dst_checks false
-  end
-end
-
-stack 'vpc', vpc
 ```
 
 Diffing our template, we can see our VPC will get a Route, RouteTable,
@@ -868,74 +758,13 @@ the public subnet. We can create an
 [AWS::EC2::SubnetRouteTableAssociation][cf-association] resource to do that. The
 `ec2_subnet_route_table_association` method in Convection will do that.
 
-Update your Cloudfile to look like the one below.
+Add the below block to the bottom of your vpc.rb template below your `ec2_instance 'NATInstance'` block.
 
 ```ruby
-require 'convection'
-
-class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch', :default => false
+ec2_subnet_route_table_association 'DemoVPCRouteTable' do
+  route_table fn_ref('DemoVPCTableInternetGateway')
+  subnet fn_ref('PublicSubnet')
 end
-
-name 'convection-demo'
-region 'us-east-1'
-
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-    enable_dns true
-    add_route_table 'InternetGateway', gateway_route: true
-  end
-
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
-  end
-
-  ec2_subnet 'PublicSubnet' do
-    network '10.10.11.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-public"
-    vpc fn_ref('DemoVPC')
-    public_ips true
-  end
-
-  ec2_security_group 'NATSecurityGroup' do
-    description 'NAT access for private subnet'
-    vpc fn_ref('DemoVPC')
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
-    ingress_rule :tcp, 443 do
-      source '10.10.10.0/24'
-    end
-    ingress_rule :tcp, 80 do
-      source '10.10.10.0/24'
-    end
-    egress_rule :tcp, 443 do
-      source '0.0.0.0/0'
-    end
-    egress_rule :tcp, 80 do
-      source '0.0.0.0/0'
-    end
-  end
-
-  ec2_instance 'NATInstance' do
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat"
-    image_id 'ami-c02b04a8'
-    subnet fn_ref('PublicSubnet')
-    security_group fn_ref('NATSecurityGroup')
-    src_dst_checks false
-  end
-
-  ec2_subnet_route_table_association 'DemoVPCRouteTable' do
-    route_table fn_ref('DemoVPCTableInternetGateway')
-    subnet fn_ref('PublicSubnet')
-  end
-end
-
-stack 'vpc', vpc
 ```
 
 Where did the reference to "DemoVPCTableInternetGateway" come from? Convection
@@ -975,6 +804,8 @@ a single route for all traffic from our private instances through our NAT.
 Convection's `ec2_route_table` method can be used to explicitly create a route
 table.
 
+Add the below block to the bottom of your vpc.rb template
+
 ```ruby
 ec2_route_table 'PrivateRouteTable' do
   vpc fn_ref('DemoVPC')
@@ -989,87 +820,14 @@ Now we need to link the private route table to the private subnet. Like we did
 for the public subnet, we can use Convection's `ec2_subnet_route_table_association`
 method.
 
-Update your Cloudfile to look like the one below.
+Add the below to the bottom of your vpc.rb template.
 
 ```ruby
-require 'convection'
-
-class Model::Template::Resource::EC2Subnet
-  property :public_ips, 'MapPublicIpOnLaunch', :default => false
+ec2_subnet_route_table_association 'PrivateRouteAssoc' do
+  route_table fn_ref('PrivateRouteTable')
+  subnet fn_ref('PrivateSubnet')
 end
 
-region 'us-east-1'
-name 'convection-demo'
-
-vpc = template do
-  description 'VPC with Public and Private Subnets (NAT)'
-
-  ec2_vpc 'DemoVPC' do
-    network '10.10.10.0/23'
-    tag 'Name', "#{stack.cloud}-#{stack.name}"
-    enable_dns true
-    add_route_table 'InternetGateway', gateway_route: true
-  end
-
-  ec2_subnet 'PrivateSubnet' do
-    network '10.10.10.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-private"
-    vpc fn_ref('DemoVPC')
-  end
-
-  ec2_subnet 'PublicSubnet' do
-    network '10.10.11.0/24'
-    tag 'Name', "#{stack.cloud}-#{stack.name}-public"
-    vpc fn_ref('DemoVPC')
-    public_ips true
-  end
-
-  ec2_security_group 'NATSecurityGroup' do
-    description 'NAT access for private subnet'
-    vpc fn_ref('DemoVPC')
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat-security-group"
-    ingress_rule :tcp, 443 do
-      source '10.10.10.0/24'
-    end
-    ingress_rule :tcp, 80 do
-      source '10.10.10.0/24'
-    end
-    egress_rule :tcp, 443 do
-      source '0.0.0.0/0'
-    end
-    egress_rule :tcp, 80 do
-      source '0.0.0.0/0'
-    end
-  end
-
-  ec2_instance 'NATInstance' do
-    tag 'Name', "#{stack.cloud}-#{stack.name}-nat"
-    image_id 'ami-c02b04a8'
-    subnet fn_ref('PublicSubnet')
-    security_group fn_ref('NATSecurityGroup')
-    src_dst_checks false
-  end
-
-  ec2_subnet_route_table_association 'DemoVPCRouteTable' do
-    route_table fn_ref('DemoVPCTableInternetGateway')
-    subnet fn_ref('PublicSubnet')
-  end
-
-  ec2_route_table 'PrivateRouteTable' do
-    vpc fn_ref('DemoVPC')
-    route 'PrivateRoute' do
-      destination '0.0.0.0/0'
-      instance fn_ref('NATInstance')
-    end
-  end
-
-  ec2_subnet_route_table_association 'PrivateRouteAssoc' do
-    route_table fn_ref('PrivateRouteTable')
-    subnet fn_ref('PrivateSubnet')
-  end
-end
-
-stack 'vpc', vpc
 ```
 
 Diffing the template shows three new resources, one for the route, one for the
