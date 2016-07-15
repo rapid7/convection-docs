@@ -13,7 +13,6 @@ account
 * A security group for the NAT router so you can control access to it
 
 To get started, create the following directory structure for your project.
-code in it.
 ```
 my-convection-project/
 ├── clouds
@@ -55,8 +54,7 @@ name 'convection-demo'
 stack 'vpc', Templates::VPC
 ```
 In the templates directory create a vpc.rb file and include the following in it.
-```
-
+```ruby
 require 'convection'
 
 module Templates
@@ -201,8 +199,8 @@ compare  Compare local state of stack vpc (convection-demo-vpc) with remote temp
  create  .Resources.DemoVPC.Properties.Tags.0.Key: Name
  create  .Resources.DemoVPC.Properties.Tags.0.Value: convection-demo-vpc
 ```
-If you want to see what the cloud formation template for your vpc template would look like you can run the below.
-This can help you verify that values referenced that exist under the "stack" namespace are set correctly.
+To see what the cloud formation template for your vpc template would look like you can run `convection print vpc`.
+This can help you verify that values referenced under the `stack` namespace are set correctly.
 
 ```text
 $> convection print vpc
@@ -299,7 +297,7 @@ compare  Compare local state of stack vpc (convection-demo-vpc) with remote temp
 There's our new private subnet with its CIDR block and "Name" tag. If we look at
 the documentation for the [AWS::EC2::Subnet][cf-subnet] resource, we
 can see it has a required "VpcId" attribute. We can use the Convection's
-`fn_ref` method to get the ID of our VPC and pass it in to the subnet.
+`fn_ref` method to get the logical ID of our VPC resource and pass it in to the subnet.
 
 Update your vpc.rb template to look like the one below.
 
@@ -372,7 +370,7 @@ resource, the major difference between a public and private subnet is
 that Amazon assigns IP addresses to public subnets. Making a subnet public is
 a matter of setting the "MapPublicIpOnLaunch" property to `true`.
 
-Add the below line to your public subnet block
+Add the below line to your `PublicSubnet` block
 
 ```ruby
 public_ips true
@@ -533,6 +531,12 @@ module Templates
       end
       ingress_rule :tcp, 80 do
         source '10.10.10.0/24'
+      end
+      egress_rule :tcp, 443 do
+        source '0.0.0.0/0'
+      end
+      egress_rule :tcp, 80 do
+        source '0.0.0.0/0'
       end
     end
 
