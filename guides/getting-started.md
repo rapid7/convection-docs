@@ -12,7 +12,7 @@ account
 * A NAT router so EC2 instances in the private subnet can reach the internet
 * A security group for the NAT router so you can control access to it
 
-To get started, create the following directory structure for your project.
+To get started, create the following directory structure for your project. If your region is not us-east-1 then change that to your region. If you have multiple regions create multiple region folders each with their own cloud file.
 ```
 my-convection-project/
 ├── clouds
