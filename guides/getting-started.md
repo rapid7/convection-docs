@@ -26,8 +26,9 @@ gem 'convection'
 
 In the us-east-1 folder open a new file named "Cloudfile" and put the following Ruby
 ```ruby
-require_relative './templates/vpc.rb'
-require 'convection'
+Dir.glob('./../../templates/**.rb') do |file|
+  require_relative file
+end
 
 region 'us-east-1'
 name 'convection-demo'
@@ -46,7 +47,9 @@ and stack to define our VPC.
 Update your Cloudfile to look like the one below.
 
 ```ruby
-require 'convection'
+Dir.glob('./../../templates/**.rb') do |file|
+  require_relative file
+end
 
 region 'us-east-1'
 name 'convection-demo'
