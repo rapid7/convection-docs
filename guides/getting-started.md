@@ -205,7 +205,7 @@ compare  Compare local state of stack vpc (convection-demo-vpc) with remote temp
 To see what the cloud formation template for your vpc template would look like you can run `convection print vpc`.
 This can help you verify that values referenced under the `stack` namespace are set correctly.
 
-```text
+```json
 $> convection print vpc
 {
   "AWSTemplateFormatVersion": "2010-09-09",
